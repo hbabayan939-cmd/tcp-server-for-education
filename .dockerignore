@@ -1,0 +1,11 @@
+.git
+.gitignore
+.dockerignore
+build
+cmake-build-*
+out
+dist
+.vscode
+.idea
+*.swp
+*.swo
