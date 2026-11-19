@@ -35,7 +35,17 @@ cmake --build build --parallel
 
 The default bind address is `127.0.0.1:5050`, so the server is only reachable from the local machine. To accept remote connections, explicitly set `--host 0.0.0.0` and restrict access with a firewall.
 
-The server uses a fixed worker pool (8 workers by default) and a bounded pending-connection queue (64 connections). When the queue is full, new clients are closed. Each client has a 30-second socket I/O timeout and a 1 MiB transfer limit; exceeding the byte limit closes the connection. Ctrl+C and SIGTERM stop accepting new connections and let active workers finish or time out.
+The server uses a fixed worker pool (8 workers by default) and a bounded pending-connection queue (64 connections). When the queue is full, new clients are closed. Each client has a 30-second socket I/O idle timeout, a 120-second hard connection lifetime, and a 1 MiB transfer limit; reaching any limit closes the connection. The hard lifetime prevents a client from keeping a worker busy indefinitely by sending occasional bytes before the idle timeout. Ctrl+C and SIGTERM stop accepting new connections, close queued sockets, and let active workers finish or time out.
+
+## How the protections work
+
+1. **The bind address controls reachability.** `127.0.0.1` accepts local connections only. Binding to `0.0.0.0` exposes the listener on network interfaces, so use a firewall to restrict who can reach it.
+2. **The worker pool and queue cap resource use.** At most 8 connections are being processed and 64 more are waiting with defaults. When the queue is full, the server closes new accepted sockets instead of creating more threads or growing memory without limit.
+3. **Each connection has three limits.** The idle timeout closes clients that stop making progress. The hard lifetime is a wall-clock deadline that does not reset when data arrives, preventing a slow client from holding a worker forever. The byte limit caps how much data one client can make the server echo.
+4. **The protocol handler stays bounded.** It uses a fixed 4 KiB buffer and streams data directly back; it does not store a whole client message in memory.
+5. **Shutdown drains safely.** SIGINT/SIGTERM stops accepting, closes clients still in the queue, and joins the fixed workers after active connections finish or reach their limits.
+
+These controls reduce resource exhaustion; they do not make plain TCP confidential or authenticate clients. Anyone who can connect can read the echoed bytes on the network and use the service. For untrusted networks, add TLS with managed certificates and client authentication where needed, and keep a firewall in front.
 
 Available options:
 
@@ -46,6 +56,7 @@ Available options:
 | `--workers N` | `8` | Worker threads (1–256) |
 | `--queue N` | `64` | Maximum queued client connections |
 | `--idle-timeout SECONDS` | `30` | Per-operation socket timeout (1–86400) |
+| `--connection-timeout SECONDS` | `120` | Hard lifetime for each connection (1–86400) |
 | `--max-bytes N` | `1048576` | Maximum bytes echoed per connection |
 
 Try it with netcat:

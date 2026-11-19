@@ -81,6 +81,7 @@ public:
     explicit ClientPool(const config::ServerConfig& config)
         : queue_capacity_(config.queue_capacity),
           idle_timeout_seconds_(config.idle_timeout_seconds),
+          max_connection_seconds_(config.max_connection_seconds),
           max_bytes_per_client_(config.max_bytes_per_client) {
         try {
             for (std::size_t i = 0; i < config.worker_count; ++i) {
@@ -133,7 +134,8 @@ private:
             }
             try {
                 configure_client_socket(client_fd, idle_timeout_seconds_);
-                protocol::EchoProtocol::handle(client_fd, max_bytes_per_client_);
+                protocol::EchoProtocol::handle(client_fd, max_bytes_per_client_,
+                                               idle_timeout_seconds_, max_connection_seconds_);
             } catch (const std::exception& error) {
                 std::cerr << "Client error: " << error.what() << '\n';
             }
@@ -143,6 +145,7 @@ private:
 
     const std::size_t queue_capacity_;
     const unsigned int idle_timeout_seconds_;
+    const unsigned int max_connection_seconds_;
     const std::size_t max_bytes_per_client_;
     std::mutex mutex_;
     std::condition_variable condition_;
