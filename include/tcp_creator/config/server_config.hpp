@@ -12,6 +12,7 @@ struct ServerConfig {
     std::size_t worker_count = 8;
     std::size_t queue_capacity = 64;
     unsigned int idle_timeout_seconds = 30;
+    unsigned int max_connection_seconds = 120;
     std::size_t max_bytes_per_client = 1024 * 1024;
 };
 

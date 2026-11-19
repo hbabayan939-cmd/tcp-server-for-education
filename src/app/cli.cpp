@@ -46,6 +46,9 @@ CliResult parse_arguments(int argc, char* argv[], config::ServerConfig& config) 
         } else if (option == "--idle-timeout") {
             config.idle_timeout_seconds = static_cast<unsigned int>(positive_size(
                 next_value(i, argc, argv, option), option, 86400));
+        } else if (option == "--connection-timeout") {
+            config.max_connection_seconds = static_cast<unsigned int>(positive_size(
+                next_value(i, argc, argv, option), option, 86400));
         } else if (option == "--max-bytes") {
             config.max_bytes_per_client = positive_size(
                 next_value(i, argc, argv, option), option, 1024ULL * 1024ULL * 1024ULL);
@@ -59,7 +62,7 @@ CliResult parse_arguments(int argc, char* argv[], config::ServerConfig& config) 
 void print_usage(const char* program_name) {
     std::cout << "Usage: " << program_name
               << " [--host ADDRESS] [--port PORT] [--workers N] [--queue N]\n"
-              << "       [--idle-timeout SECONDS] [--max-bytes N]\n"
+              << "       [--idle-timeout SECONDS] [--connection-timeout SECONDS] [--max-bytes N]\n"
               << "Start a bounded TCP echo server (defaults: 127.0.0.1:5050).\n";
 }
 

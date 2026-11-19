@@ -1,2 +1,0 @@
-# No Python runtime dependencies are required.
-# The server is implemented in C++17 and built with CMake.
